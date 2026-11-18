@@ -1,0 +1,211 @@
+========================================================================
+         JAK DZIALA GENEROWANIE SWIATA - GRA SURVIVAL (GODOT)
+========================================================================
+
+1. SEED (ZIARNO LOSOWE)
+------------------------------------------------------------------------
+- Swiat generowany jest na podstawie liczby zwanej "seed" (ziarno losowe).
+- Seed jest generowany losowo przy tworzeniu nowej gry: randi()
+- Ten sam seed zawsze wygeneruje ten sam swiat - mapa jest deterministyczna.
+- Seed jest zapisywany w pliku survival_save.json.
+
+
+2. CHUNKI (KAWALKI MAPY)
+------------------------------------------------------------------------
+- Swiat podzielony jest na chunki po 32 kafelki (CHUNK_TILES = 32).
+- Kazdy kafelek ma rozmiar 16 pikseli (TILE = 16).
+- Chunk ma wiec szerokosc 32 * 16 = 512 pikseli.
+- Chunki laduja sie dynamicznie w miare ruchu gracza:
+  * LOAD_RADIUS = 3 (laduje 3 chunki w kazda strone od gracza)
+  * UNLOAD_RADIUS = 5 (odladuje chunki dalej niz 5 od gracza)
+- Pozycja chunka: index * 512 pikseli w osi X.
+
+
+3. BIOMY
+------------------------------------------------------------------------
+Biom okresla sie na podstawie pozycji gracza w kafelkach (world_tile_x).
+Funkcja: biome_at(world_tile_x)
+
+Uzywa szumu (_hnoise) z czestotliwoscia 0.0017 i seed + 17.
+Wartosc szumu n okresla biom:
+
+  n >  0.45  ->  sakura_garden     (Ogród sakur - rozowe, plaskie)
+  n >  0.12  ->  japanese_forest   (Japonski las - ciemnozielony, pagorkowaty)
+  n > -0.15  ->  temple_grounds    (Podwoże świątyni - jasny, plaski)
+  n > -0.45  ->  bamboo_valley     (Dolina bambusa - zielony, nizki)
+  n <= -0.45 ->  mountain_fuji     (Gora Fuji - wysoki, z sniegami)
+
+Kazdy biom ma swoje kolory:
+  - grass (trawa)
+  - dirt (ziemia)
+  - stone (kamien)
+  - sky (niebo)
+  - accent (akcent - np. platki sakury)
+
+Przyklad - sakura_garden:
+  grass = Color(0.55, 0.75, 0.45) - jasnozielona trawa
+  sky = Color(0.85, 0.75, 0.90) - rozowe niebo
+  accent = Color(0.96, 0.64, 0.78) - rozowe platki
+
+
+4. WYSOKOSC TERENU
+------------------------------------------------------------------------
+Funkcja: ground_height(world_tile_x)
+
+Wysokosc obliczana jest z 3 warstw szumu:
+  n1 = _hnoise(x, 0.035, seed)       - glowne wzgórza
+  n2 = _hnoise(x, 0.008, seed + 91)  - duze formy terenu
+  n3 = _hnoise(x, 0.09, seed + 4)    - szczegoly
+
+Podstawowa wysokosc: 360.0 pikseli
+  + n1 * 78.0 (duze wzgórza)
+  + n2 * 46.0 (dlugie pagórki)
+  + n3 * 10.0 (maly teren)
+
+Kazdy biom modyfikuje wysokosc:
+
+  sakura_garden:   370.0 + n1*30 + n2*15 + n3*8    (plaski, nizki)
+  japanese_forest: 350.0 + n1*65 + n2*35 + n3*12   (pagorkowaty)
+  temple_grounds:  380.0 + n1*20 + n2*10            (bardzo plaski)
+  bamboo_valley:   390.0 + n1*25 + n2*12            (nizki, plaski)
+  mountain_fuji:   320.0 + n1*110 + n2*60 + n3*15   (wysokie gory)
+
+Szum (_hnoise) to suma 3 funkcji sinus:
+  sin(x * freq + s*0.01) * 0.55 +
+  sin(x * freq * 2.17 + 1.7) * 0.28 +
+  sin(x * freq * 5.3 + 4.2) * 0.17
+
+
+5. RYSOWANIE TERENU (Chunk.gd)
+------------------------------------------------------------------------
+Kazdy chunk rysuje sie w metodzie _draw():
+
+  a) Warstwa gleby (dirt) - od powierzchni do dolu
+  b) Warstwa kamienia (stone) - od +18px w dol
+  c) Trawa (grass) - 10px na wierzchu
+  d) Szczegoly trawy - co 3 kafelek, 2-3 trawinki
+  e) Szczegoly biomu:
+     - sakura_garden: platki sakury na ziemi (co 4 kafelek)
+     - sakura_garden: male kwiaty (co 8 kafelka)
+     - bamboo_valley: pnie bambusa (co 5 kafelka)
+     - mountain_fuji: snieg na szczytach (ponizej 350px)
+     - temple_grounds: sciezki kamienne (co 6 kafelka)
+  f) Kamienie - co 7 kafelka, szczegoly pod ziemia
+  g) Brama Torii na starcie (chunk 0) - czerwona brama japonska
+
+
+6. DRZEWA (TreeProp.gd)
+------------------------------------------------------------------------
+W kazdym chunku generowane jest 2-5 drzew (zamiast 1).
+Szansa na drzewo: 85% na kazda pozycje.
+
+Typ drzewa zalezy od biomu:
+
+  sakura_garden -> Drzewo wiśni (sakura)
+    - Pień 10x40px, ciemnobrązowy
+    - 2 gałęzie
+    - 3 warstwy korony (rozowe):
+      * glowna 44x30px
+      * gorna 34x22px
+      * szczyt 22x16px
+    - Akcenty ciemnorozowe i biale swiatla
+    - ANIMACJA: opadajace platki co 0.3s
+      * platki spadaja z korony z tween animation
+      * przesuniecie w X i Y, zanikanie przezroczystosci
+
+  japanese_forest -> Sosna japonska (pine)
+    - Pień 8x50px
+    - 4 warstwy (trójkątny ksztalt):
+      * dolna 40x14px
+      * srodkowa 32x12px
+      * gorna 24x12px
+      * szczyt 14x10px
+
+  bamboo_valley -> Bambus (bamboo)
+    - 3 pnie bambusa, rozne wysokosci (50-70px)
+    - Wzory na kazdym pniu (co 14px)
+    - Liscie na szczycie kazdego pnia
+
+  temple_grounds, mountain_fuji -> Sakura (domyślnie)
+
+
+7. MOB Y I ENTITIE
+------------------------------------------------------------------------
+Kazdy chunk ma losowe entity generowane z RandomNumberGenerator:
+  rng.seed = hash([seed_value, chunk_index])
+
+  a) Skrzynia (chest) - 28% szansy
+     - Losowa pozycja w chunku (4-27 kafelek)
+     - Zawiera losowe przedmioty
+
+  b) Pusczipka (trap) - 22% szansy
+     - Losowa pozycja w chunku (3-28 kafelek)
+     - Zadaje obrazenia przy kontakcie
+
+  c) Mob y - 0 do 4 (zalezy od odleglosci)
+     - Blisko (0-3000): slime, goblin
+     - Srednio (3000-8000): goblin, wolf, slime
+     - Daleko (8000+): skeleton, wolf, goblin, brute
+     - Niebezpiecznosc rosnie z odlegloscia: 1.0 + dist/1800
+
+  d) Drzewa - 2-5 na chunk (85% szansy na kazde)
+
+
+8. BOSSY
+------------------------------------------------------------------------
+Pierwszy boss pojawia sie po 12000 kafelkach (FIRST_BOSS_TILES).
+Kazdy nastepny boss co 10000 kafelkow (NEXT_BOSS_EVERY).
+
+Funkcja: next_boss_tiles(player_tiles)
+  - Pokazuje ile jeszcze kafelkow do nastepnego bossa.
+  - Bossy spawnuja sie w obu kierunkach (-1 i +1).
+  - Bossy sa trwale i nie znikaja po odladowaniu chunka.
+
+
+9. ZAPIS I WCZYTYWANIE
+------------------------------------------------------------------------
+Gra automatycznie zapisuje sie co 8 sekund.
+
+Zapisywane dane (survival_save.json):
+  - seed (ziarno losowe)
+  - hp, max_hp, hunger, thirst (statystyki)
+  - xp, level (doswiadczenie)
+  - px, py (pozycja gracza)
+  - weapon, armor (wyposazenie)
+  - hotbar (wybrany slot)
+  - inventory (ekwipunek 24 sloty)
+  - chunks (stany chunkow - moby, skrzynie)
+  - bosses (zabici bossy)
+
+Nowa gra usuwa plik zapisu i resetuje wszystko.
+
+
+10. NIEBO I TLO
+------------------------------------------------------------------------
+Niebo (Sky/Color) zmienia kolor w zaleznosci od biomu gracza.
+Przejscie jest płynne (lerp 0.02 na klatke).
+
+Gory w tle (Mountains/FarMountains):
+  - CanvasLayer na layerze -9
+  - Polprzezroczysty niebieski prostokat
+  - Tworzy iluzje glebokosci
+
+
+11. KLUCZOWE WARTOSCI
+------------------------------------------------------------------------
+  TILE = 16                    - rozmiar kafelka w pikselach
+  CHUNK_TILES = 32             - kafelki na chunk
+  CHUNK_SIZE = 512             - piksele na chunk (32*16)
+  LOAD_RADIUS = 3              - laduje 7 chunkow naraz
+  UNLOAD_RADIUS = 5            - odladuje po 11 chunkach
+  INV_SIZE = 24                - 24 sloty ekwipunku
+  HOTBAR = 8                   - 8 slotow hotbara
+  FIRST_BOSS_TILES = 12000     - pierwszy boss
+  NEXT_BOSS_EVERY = 10000      - kazdy nastepny boss
+  GRAVITY = 980                - grawitacja
+  SPEED = 210                  - predkosc gracza
+  JUMP = -430                  - sily skoku
+
+========================================================================
+                            KONIEC DOKUMENTACJI
+========================================================================

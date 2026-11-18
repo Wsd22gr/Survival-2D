@@ -1,0 +1,256 @@
+[gd_scene load_steps=4 format=3 uid="uid://bn3a50bg85ut5"]
+
+[ext_resource type="Script" path="res://scripts/World.gd" id="1_world"]
+[ext_resource type="Script" path="res://scripts/Player.gd" id="2_player"]
+[ext_resource type="Script" path="res://scripts/HUD.gd" id="3_hud"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
+size = Vector2(16, 32)
+
+[node name="World" type="Node2D"]
+script = ExtResource("1_world")
+
+[node name="Sky" type="CanvasLayer" parent="."]
+layer = -10
+
+[node name="Color" type="ColorRect" parent="Sky"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.85, 0.75, 0.90, 1)
+
+[node name="Mountains" type="CanvasLayer" parent="."]
+layer = -9
+
+[node name="FarMountains" type="ColorRect" parent="Mountains"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.60, 0.68, 0.82, 0.35)
+
+[node name="Chunks" type="Node2D" parent="."]
+
+[node name="Entities" type="Node2D" parent="."]
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(40, 200)
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("2_player")
+
+[node name="Visual" type="Node2D" parent="Player"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+position = Vector2(0, -16)
+shape = SubResource("RectangleShape2D_player")
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position = Vector2(0, -40)
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
+
+[node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
+script = ExtResource("3_hud")
+
+[node name="Root" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Bars" type="Control" parent="HUD/Root"]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 280.0
+offset_bottom = 90.0
+mouse_filter = 2
+
+[node name="HpBg" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_right = 240.0
+offset_bottom = 14.0
+color = Color(0.12, 0.08, 0.08, 0.85)
+
+[node name="HpFill" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_right = 240.0
+offset_bottom = 14.0
+color = Color(0.78, 0.18, 0.16, 1)
+
+[node name="HungerBg" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_top = 20.0
+offset_right = 240.0
+offset_bottom = 32.0
+color = Color(0.12, 0.08, 0.05, 0.85)
+
+[node name="HungerFill" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_top = 20.0
+offset_right = 240.0
+offset_bottom = 32.0
+color = Color(0.85, 0.55, 0.15, 1)
+
+[node name="ThirstBg" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_top = 38.0
+offset_right = 240.0
+offset_bottom = 50.0
+color = Color(0.05, 0.08, 0.12, 0.85)
+
+[node name="ThirstFill" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_top = 38.0
+offset_right = 240.0
+offset_bottom = 50.0
+color = Color(0.2, 0.55, 0.9, 1)
+
+[node name="XpBg" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_top = 56.0
+offset_right = 240.0
+offset_bottom = 64.0
+color = Color(0.08, 0.08, 0.1, 0.85)
+
+[node name="XpFill" type="ColorRect" parent="HUD/Root/Bars"]
+layout_mode = 0
+offset_top = 56.0
+offset_right = 240.0
+offset_bottom = 64.0
+color = Color(0.55, 0.35, 0.85, 1)
+
+[node name="Stats" type="Label" parent="HUD/Root"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 92.0
+offset_right = 620.0
+offset_bottom = 180.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+text = "..."
+
+[node name="Help" type="Label" parent="HUD/Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -430.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = 120.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 13
+text = "A/D ruch   Spacja skok   J/LPM atak   F strzał
+E skrzynia   Q użyj (jedzenie/broń/zbroja)
+I ekwipunek   C rzemiosło   1-8 hotbar
+Cel: moc, ekwipunek, boss co 12000/10000 kratek"
+
+[node name="Log" type="Label" parent="HUD/Root"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -90.0
+offset_right = 300.0
+offset_bottom = -50.0
+theme_override_colors/font_color = Color(1, 0.95, 0.7, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+
+[node name="Hotbar" type="HBoxContainer" parent="HUD/Root"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_top = -48.0
+offset_right = 320.0
+offset_bottom = -8.0
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="InvPanel" type="Panel" parent="HUD/Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -180.0
+offset_right = 260.0
+offset_bottom = 160.0
+
+[node name="Title" type="Label" parent="HUD/Root/InvPanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 400.0
+offset_bottom = 32.0
+text = "Ekwipunek (klik = użyj / załóż)"
+
+[node name="Grid" type="GridContainer" parent="HUD/Root/InvPanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 36.0
+offset_right = 508.0
+offset_bottom = 320.0
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 4
+
+[node name="CraftPanel" type="Panel" parent="HUD/Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -200.0
+offset_right = 280.0
+offset_bottom = 200.0
+
+[node name="Title" type="Label" parent="HUD/Root/CraftPanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 32.0
+text = "Rzemiosło — kliknij przepis"
+
+[node name="Scroll" type="ScrollContainer" parent="HUD/Root/CraftPanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 36.0
+offset_right = 548.0
+offset_bottom = 380.0
+
+[node name="List" type="VBoxContainer" parent="HUD/Root/CraftPanel/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
